@@ -24,7 +24,7 @@ def check_dependencies():
         click.echo(
             "Please install the AWS CLI, pip, and npm before running this script."
         )
-        exit(1)
+        raise click.Abort()
 
 
 def check_aws_signed_in():
@@ -35,7 +35,7 @@ def check_aws_signed_in():
         )
     except subprocess.CalledProcessError:
         click.echo("Please sign in to the AWS CLI before running this script.")
-        exit(1)
+        raise click.Abort()
 
 
 def get_default_region():
@@ -99,53 +99,55 @@ def create(layer_name, runtime, packages, region):
     with tempfile.TemporaryDirectory() as temp_dir:
         os.makedirs(f"{temp_dir}/{runtime_dir}", exist_ok=True)
 
-        if runtime == "nodejs":
-            os.makedirs(f"{temp_dir}/{runtime_dir}/node_modules", exist_ok=True)
-            subprocess.Popen(
-                ["npm", "install", "--prefix", f"{temp_dir}/{runtime_dir}"]
-                + packages.split(),
-            ).wait()
-        else:
-            subprocess.Popen(
-                ["pip", "install", "--target", f"{temp_dir}/{runtime_dir}"]
-                + packages.split(),
-            ).wait()
-
-        # Create the zip file
-        zip_file = f"{layer_name}.zip"
         try:
+            if runtime == "nodejs":
+                os.makedirs(f"{temp_dir}/{runtime_dir}/node_modules", exist_ok=True)
+                subprocess.run(
+                    ["npm", "install", "--prefix", f"{temp_dir}/{runtime_dir}"]
+                    + packages.split(),
+                    check=True,
+                )
+            else:
+                subprocess.run(
+                    ["pip", "install", "--target", f"{temp_dir}/{runtime_dir}"]
+                    + packages.split(),
+                    check=True,
+                )
+
+            # Create the zip file
+            zip_file = f"{layer_name}.zip"
             shutil.make_archive(layer_name, "zip", temp_dir)
-        except Exception as e:
-            click.echo(f"Error creating zip file: {e}")
-            return
 
-        if not os.path.exists(zip_file):
-            click.echo("Zip file was not created.")
-            return
+            if not os.path.exists(zip_file):
+                click.echo("Zip file was not created.")
+                raise click.Abort()
 
-        subprocess.Popen(
-            [
-                "aws",
-                "lambda",
-                "publish-layer-version",
-                "--layer-name",
-                layer_name,
-                "--zip-file",
-                f"fileb://{zip_file}",
-                "--compatible-runtimes",
-                runtime_version,
-                "--region",
-                region,
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ).wait()
+            subprocess.run(
+                [
+                    "aws",
+                    "lambda",
+                    "publish-layer-version",
+                    "--layer-name",
+                    layer_name,
+                    "--zip-file",
+                    f"fileb://{zip_file}",
+                    "--compatible-runtimes",
+                    runtime_version,
+                    "--region",
+                    region,
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
 
-        os.remove(zip_file)
-
-        click.echo(
-            f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda!"
-        )
+            os.remove(zip_file)
+            click.echo(
+                f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda!"
+            )
+        except subprocess.CalledProcessError as e:
+            click.echo(f"Error: {e}")
+            raise click.Abort()
 
 
 # List command
@@ -167,7 +169,7 @@ def list(region):
         click.echo(
             "Error: No AWS region specified. Please set AWS_DEFAULT_REGION or configure your AWS CLI."
         )
-        exit(1)
+        raise click.Abort()
 
     result = subprocess.run(
         ["aws", "lambda", "list-layers", "--region", region],
@@ -176,7 +178,7 @@ def list(region):
     )
 
     if result.returncode != 0:
-        click.echo(f"Error listing layers: {result.stderr}")
+        click.echo("Error listing layers.")
     else:
         click.echo(result.stdout)
 
@@ -210,23 +212,27 @@ def delete(layer_name, version_number, region):
         click.echo(
             "Error: No AWS region specified. Please set AWS_DEFAULT_REGION or configure your AWS CLI."
         )
-        exit(1)
+        raise click.Abort()
 
-    subprocess.Popen(
-        [
-            "aws",
-            "lambda",
-            "delete-layer-version",
-            "--layer-name",
-            layer_name,
-            "--version-number",
-            version_number,
-            "--region",
-            region,
-        ],
-    ).wait()
-
-    click.echo(f"Layer {layer_name} version {version_number} has been deleted.")
+    try:
+        subprocess.run(
+            [
+                "aws",
+                "lambda",
+                "delete-layer-version",
+                "--layer-name",
+                layer_name,
+                "--version-number",
+                version_number,
+                "--region",
+                region,
+            ],
+            check=True,
+        )
+        click.echo(f"Layer {layer_name} version {version_number} has been deleted.")
+    except subprocess.CalledProcessError:
+        click.echo("Error deleting the layer.")
+        raise click.Abort()
 
 
 # Entry point

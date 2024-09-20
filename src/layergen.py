@@ -24,7 +24,7 @@ def check_dependencies():
         click.echo(
             "Please install the AWS CLI, pip, and npm before running this script."
         )
-        raise click.Abort()
+        return
 
 
 def check_aws_signed_in():
@@ -35,7 +35,7 @@ def check_aws_signed_in():
         )
     except subprocess.CalledProcessError:
         click.echo("Please sign in to the AWS CLI before running this script.")
-        raise click.Abort()
+        return
 
 
 def get_default_region():
@@ -120,7 +120,7 @@ def create(layer_name, runtime, packages, region):
 
             if not os.path.exists(zip_file):
                 click.echo("Zip file was not created.")
-                raise click.Abort()
+                return
 
             subprocess.run(
                 [
@@ -147,7 +147,7 @@ def create(layer_name, runtime, packages, region):
             )
         except subprocess.CalledProcessError as e:
             click.echo(f"Error: {e}")
-            raise click.Abort()
+            return
 
 
 # List command
@@ -169,7 +169,7 @@ def list(region):
         click.echo(
             "Error: No AWS region specified. Please set AWS_DEFAULT_REGION or configure your AWS CLI."
         )
-        raise click.Abort()
+        return
 
     result = subprocess.run(
         ["aws", "lambda", "list-layers", "--region", region],
@@ -212,7 +212,7 @@ def delete(layer_name, version_number, region):
         click.echo(
             "Error: No AWS region specified. Please set AWS_DEFAULT_REGION or configure your AWS CLI."
         )
-        raise click.Abort()
+        return
 
     try:
         subprocess.run(
@@ -232,7 +232,7 @@ def delete(layer_name, version_number, region):
         click.echo(f"Layer {layer_name} version {version_number} has been deleted.")
     except subprocess.CalledProcessError:
         click.echo("Error deleting the layer.")
-        raise click.Abort()
+        return
 
 
 # Entry point

@@ -48,9 +48,31 @@ def check_aws_signed_in():
         sys.exit(1)
 
 
-def get_default_region():
-    """Get the default AWS region from the AWS CLI configuration or environment variable."""
-    region = "us-east-1"
+def get_default_region(flag=None):
+    """Get the default AWS region from the AWS CLI configuration or environment variable.
+
+    If no flag is provided, always use us-east-1 as default.
+    """
+    if flag:
+        result = subprocess.run(
+            ["aws", "configure", "get", "region"],
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode == 0 and result.stdout.strip():
+            region = result.stdout.strip()
+        else:
+            region = os.getenv("aws_default_region")
+            if region:
+                click.echo(f"Using aws_default_region: {region}")
+            else:
+                click.echo("No default region configured, using us-east-1 as default.")
+                region = "us-east-1"
+    else:
+        click.echo("No flag provided, using us-east-1 as default.")
+        region = "us-east-1"
+
     return region
 
 

@@ -146,6 +146,10 @@ def create(layer_name, runtime, packages, region):
             sys.exit(1)
 
         click.echo(f"Uploading Lambda Layer from {zip_file}")
+        click.echo(
+            f"Layer Name: {layer_name}, Zip File: {zip_file}, Region: {region}, Runtime Version: {runtime_version}"
+        )
+
         subprocess.run(
             [
                 "aws",

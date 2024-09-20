@@ -106,7 +106,7 @@ def create(layer_name, runtime, packages, region):
         runtime_version = "python3.12"
         runtime_dir = "python"
 
-    if region is None:
+    if region == "None":
         region = get_default_region()
 
     unique_id = str(uuid.uuid4())
@@ -146,9 +146,6 @@ def create(layer_name, runtime, packages, region):
             sys.exit(1)
 
         click.echo(f"Uploading Lambda Layer from {zip_file}")
-        click.echo(
-            f"Layer Name: {layer_name}, Zip File: {zip_file}, Region: {region}, Runtime Version: {runtime_version}"
-        )
 
         subprocess.run(
             [

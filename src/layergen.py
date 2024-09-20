@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 import click
@@ -24,7 +25,7 @@ def check_dependencies():
         click.echo(
             "Please install the AWS CLI, pip, and npm before running this script."
         )
-        return
+        sys.exit(1)
 
 
 def check_aws_signed_in():
@@ -35,7 +36,7 @@ def check_aws_signed_in():
         )
     except subprocess.CalledProcessError:
         click.echo("Please sign in to the AWS CLI before running this script.")
-        return
+        sys.exit(1)
 
 
 def get_default_region():
@@ -120,7 +121,7 @@ def create(layer_name, runtime, packages, region):
 
             if not os.path.exists(zip_file):
                 click.echo("Zip file was not created.")
-                return
+                sys.exit(1)
 
             subprocess.run(
                 [
@@ -147,7 +148,7 @@ def create(layer_name, runtime, packages, region):
             )
         except subprocess.CalledProcessError as e:
             click.echo(f"Error: {e}")
-            return
+            sys.exit(1)
 
 
 # List command
@@ -169,7 +170,7 @@ def list(region):
         click.echo(
             "Error: No AWS region specified. Please set AWS_DEFAULT_REGION or configure your AWS CLI."
         )
-        return
+        sys.exit(1)
 
     result = subprocess.run(
         ["aws", "lambda", "list-layers", "--region", region],

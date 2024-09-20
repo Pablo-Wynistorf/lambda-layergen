@@ -9,10 +9,11 @@ import click
 
 # Helper functions
 def check_dependencies():
-    """Check if AWS CLI, pip, and npm are installed."""
+    """Check if AWS CLI, pip, zip, and npm are installed."""
     has_aws = True
     has_pip = True
     has_npm = True
+    has_zip = True
 
     if shutil.which("aws") is None:
         has_aws = False
@@ -23,16 +24,23 @@ def check_dependencies():
     if shutil.which("npm") is None:
         has_npm = False
 
+    if shutil.which("zip") is None:
+        has_zip = False
+
     if not has_aws:
-        click.echo("Please install the AWS CLI running this script.")
+        click.echo("Please install the AWS CLI before running this script.")
         sys.exit(1)
 
     if not has_pip:
-        click.echo("Please install pip running this script.")
+        click.echo("Please install pip before running this script.")
         sys.exit(1)
 
     if not has_npm:
-        click.echo("Please install npm running this script.")
+        click.echo("Please install npm before running this script.")
+        sys.exit(1)
+
+    if not has_zip:
+        click.echo("Please install zip before running this script.")
         sys.exit(1)
 
 

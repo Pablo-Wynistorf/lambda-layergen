@@ -55,6 +55,10 @@ def get_default_region():
         capture_output=True,
         text=True,
     )
+    if result.returncode != 0:
+        click.echo("No default region configured, using us-east-1 as default.")
+        result = "us-east-1"
+
     return result.stdout.strip() if result.returncode == 0 else None
 
 
@@ -106,7 +110,7 @@ def create(layer_name, runtime, packages, region):
         runtime_version = "python3.12"
         runtime_dir = "python"
 
-    if region == "None":
+    if region is None:
         region = get_default_region()
 
     unique_id = str(uuid.uuid4())

@@ -157,13 +157,15 @@ def create(layer_name, runtime, packages, region):
                 region,
             ],
             check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
         click.echo(
             f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda in {region}."
         )
-    except subprocess.CalledProcessError as e:
-        click.echo(f"Error: {e.stderr or e.output}")
+    except subprocess.CalledProcessError:
+        click.echo("Error: Credentials are invalid or insufficient permissions.")
         sys.exit(1)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)

@@ -128,12 +128,14 @@ def create(layer_name, runtime, packages, region):
     try:
         if runtime == "nodejs":
             os.makedirs(f"{temp_dir}/{runtime_dir}/node_modules", exist_ok=True)
+            click.echo(f"Running npm install in {temp_dir}/{runtime_dir}")
             subprocess.run(
                 ["npm", "install", "--prefix", f"{temp_dir}/{runtime_dir}"]
                 + packages.split(),
                 check=True,
             )
         else:
+            click.echo(f"Running pip install in {temp_dir}/{runtime_dir}")
             subprocess.run(
                 ["pip", "install", "--target", f"{temp_dir}/{runtime_dir}"]
                 + packages.split(),
@@ -142,12 +144,14 @@ def create(layer_name, runtime, packages, region):
 
         # Create the zip file
         zip_file = f"{temp_dir}/{layer_name}.zip"
-        shutil.make_archive(zip_file.replace(".zip", ""), "zip", temp_dir)
+        shutil.make_archive(f"{temp_dir}/{layer_name}", "zip", temp_dir)
 
         if not os.path.exists(zip_file):
             click.echo("Zip file was not created.")
             sys.exit(1)
 
+        # Publish the Lambda Layer
+        click.echo(f"Publishing Lambda Layer from {zip_file}")
         subprocess.run(
             [
                 "aws",
@@ -162,8 +166,6 @@ def create(layer_name, runtime, packages, region):
                 "--region",
                 region,
             ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
             check=True,
         )
 

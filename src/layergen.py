@@ -50,22 +50,7 @@ def check_aws_signed_in():
 
 def get_default_region():
     """Get the default AWS region from the AWS CLI configuration or environment variable."""
-    result = subprocess.run(
-        ["aws", "configure", "get", "region"],
-        capture_output=True,
-        text=True,
-    )
-
-    if result.returncode == 0 and result.stdout.strip():
-        region = result.stdout.strip()
-    else:
-        region = os.getenv("AWS_DEFAULT_REGION")
-        if region:
-            click.echo(f"Using AWS_DEFAULT_REGION: {region}")
-        else:
-            click.echo("No default region configured, using us-east-1 as default.")
-            region = "us-east-1"
-
+    region = "us-east-1"
     return region
 
 
@@ -103,7 +88,6 @@ def create(layer_name, runtime, packages, region):
     check_dependencies()
     check_aws_signed_in()
 
-    # Validate layer_name
     if not re.match(r"^[a-zA-Z0-9-]+$", layer_name):
         click.echo("Error: Layer name can only contain letters, numbers, and dashes.")
         sys.exit(1)

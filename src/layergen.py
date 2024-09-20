@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 import sys
+import uuid
 
 import click
 
@@ -117,8 +118,11 @@ def create(layer_name, runtime, packages, region):
     if region is None:
         region = get_default_region()
 
-    # Set the temporary directory
-    temp_dir = "/tmp/layergen"
+    # Set the temporary directory with a unique ID
+    unique_id = str(uuid.uuid4())
+    temp_dir = f"/tmp/layergen/{unique_id}"
+    os.makedirs(temp_dir, exist_ok=True)
+
     os.makedirs(f"{temp_dir}/{runtime_dir}", exist_ok=True)
 
     try:
@@ -167,7 +171,7 @@ def create(layer_name, runtime, packages, region):
             f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda!"
         )
     except subprocess.CalledProcessError as e:
-        click.echo(f"Error: {e}")
+        click.echo(f"Error: {e.stderr or e.output}")
         sys.exit(1)
     finally:
         # Clean up

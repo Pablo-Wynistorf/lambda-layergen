@@ -157,8 +157,6 @@ def create(layer_name, runtime, packages, region):
                 region,
             ],
             check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
         )
 
         click.echo(

@@ -14,7 +14,6 @@ def check_dependencies():
     has_aws = True
     has_pip = True
     has_npm = True
-    has_zip = True
 
     if shutil.which("aws") is None:
         has_aws = False
@@ -24,9 +23,6 @@ def check_dependencies():
 
     if shutil.which("npm") is None:
         has_npm = False
-
-    if shutil.which("zip") is None:
-        has_zip = False
 
     if not has_aws:
         click.echo("Please install the AWS CLI before running this script.")
@@ -38,10 +34,6 @@ def check_dependencies():
 
     if not has_npm:
         click.echo("Please install npm before running this script.")
-        sys.exit(1)
-
-    if not has_zip:
-        click.echo("Please install zip before running this script.")
         sys.exit(1)
 
 
@@ -114,11 +106,9 @@ def create(layer_name, runtime, packages, region):
         runtime_version = "python3.12"
         runtime_dir = "python"
 
-    # Use the configured region if not provided
     if region is None:
         region = get_default_region()
 
-    # Set the temporary directory with a unique ID
     unique_id = str(uuid.uuid4())
     temp_dir = f"/tmp/layergen/{unique_id}"
     os.makedirs(temp_dir, exist_ok=True)
@@ -128,21 +118,26 @@ def create(layer_name, runtime, packages, region):
     try:
         if runtime == "nodejs":
             os.makedirs(f"{temp_dir}/{runtime_dir}/node_modules", exist_ok=True)
-            click.echo(f"Running npm install in {temp_dir}/{runtime_dir}")
+            click.echo("Installing npm packages")
             subprocess.run(
                 ["npm", "install", "--prefix", f"{temp_dir}/{runtime_dir}"]
                 + packages.split(),
                 check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
         else:
-            click.echo(f"Running pip install in {temp_dir}/{runtime_dir}")
+            click.echo("Installing pip packages")
             subprocess.run(
                 ["pip", "install", "--target", f"{temp_dir}/{runtime_dir}"]
                 + packages.split(),
                 check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
 
-        # Create the zip file
+        click.echo(f"Installed packages: {packages}")
+
         zip_file = f"{temp_dir}/{layer_name}.zip"
         shutil.make_archive(f"{temp_dir}/{layer_name}", "zip", temp_dir)
 
@@ -150,8 +145,7 @@ def create(layer_name, runtime, packages, region):
             click.echo("Zip file was not created.")
             sys.exit(1)
 
-        # Publish the Lambda Layer
-        click.echo(f"Publishing Lambda Layer from {zip_file}")
+        click.echo(f"Uploading Lambda Layer from {zip_file}")
         subprocess.run(
             [
                 "aws",
@@ -167,16 +161,17 @@ def create(layer_name, runtime, packages, region):
                 region,
             ],
             check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
         click.echo(
-            f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda!"
+            f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda in {region}."
         )
     except subprocess.CalledProcessError as e:
         click.echo(f"Error: {e.stderr or e.output}")
         sys.exit(1)
     finally:
-        # Clean up
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
@@ -191,7 +186,6 @@ def list(region):
     check_dependencies()
     check_aws_signed_in()
 
-    # Use the configured region if not provided
     if region is None:
         region = get_default_region()
 
@@ -213,7 +207,6 @@ def list(region):
         click.echo(result.stdout)
 
 
-# Delete command
 @cli.command()
 @click.option(
     "--layer-name",
@@ -234,7 +227,6 @@ def delete(layer_name, version_number, region):
     check_dependencies()
     check_aws_signed_in()
 
-    # Use the configured region if not provided
     if region is None:
         region = get_default_region()
 
@@ -265,6 +257,5 @@ def delete(layer_name, version_number, region):
         return
 
 
-# Entry point
 if __name__ == "__main__":
     cli()

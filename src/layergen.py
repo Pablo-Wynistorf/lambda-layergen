@@ -49,17 +49,24 @@ def check_aws_signed_in():
 
 
 def get_default_region():
-    """Get the default AWS region from the AWS CLI configuration."""
+    """Get the default AWS region from the AWS CLI configuration or environment variable."""
     result = subprocess.run(
         ["aws", "configure", "get", "region"],
         capture_output=True,
         text=True,
     )
-    if result.returncode != 0:
-        click.echo("No default region configured, using us-east-1 as default.")
-        result = "us-east-1"
 
-    return result.stdout.strip() if result.returncode == 0 else None
+    if result.returncode == 0 and result.stdout.strip():
+        region = result.stdout.strip()
+    else:
+        region = os.getenv("AWS_DEFAULT_REGION")
+        if region:
+            click.echo(f"Using AWS_DEFAULT_REGION: {region}")
+        else:
+            click.echo("No default region configured, using us-east-1 as default.")
+            region = "us-east-1"
+
+    return region
 
 
 # Main CLI Group

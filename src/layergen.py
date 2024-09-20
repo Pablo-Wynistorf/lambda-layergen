@@ -1,8 +1,8 @@
 import os
+import re
 import shutil
 import subprocess
 import sys
-import tempfile
 
 import click
 
@@ -10,21 +10,29 @@ import click
 # Helper functions
 def check_dependencies():
     """Check if AWS CLI, pip, and npm are installed."""
-    has_dependencies = True
+    has_aws = True
+    has_pip = True
+    has_npm = True
 
     if shutil.which("aws") is None:
-        has_dependencies = False
+        has_aws = False
 
     if shutil.which("pip") is None:
-        has_dependencies = False
+        has_pip = False
 
     if shutil.which("npm") is None:
-        has_dependencies = False
+        has_npm = False
 
-    if not has_dependencies:
-        click.echo(
-            "Please install the AWS CLI, pip, and npm before running this script."
-        )
+    if not has_aws:
+        click.echo("Please install the AWS CLI running this script.")
+        sys.exit(1)
+
+    if not has_pip:
+        click.echo("Please install pip running this script.")
+        sys.exit(1)
+
+    if not has_npm:
+        click.echo("Please install npm running this script.")
         sys.exit(1)
 
 
@@ -83,6 +91,11 @@ def create(layer_name, runtime, packages, region):
     check_dependencies()
     check_aws_signed_in()
 
+    # Validate layer_name
+    if not re.match(r"^[a-zA-Z0-9-]+$", layer_name):
+        click.echo("Error: Layer name can only contain letters, numbers, and dashes.")
+        sys.exit(1)
+
     if runtime == "nodejs":
         click.echo("You selected Node.js 20.x")
         runtime_version = "nodejs20.x"
@@ -96,59 +109,61 @@ def create(layer_name, runtime, packages, region):
     if region is None:
         region = get_default_region()
 
-    # Create a temporary directory
-    with tempfile.TemporaryDirectory() as temp_dir:
-        os.makedirs(f"{temp_dir}/{runtime_dir}", exist_ok=True)
+    # Set the temporary directory
+    temp_dir = "/tmp/layergen"
+    os.makedirs(f"{temp_dir}/{runtime_dir}", exist_ok=True)
 
-        try:
-            if runtime == "nodejs":
-                os.makedirs(f"{temp_dir}/{runtime_dir}/node_modules", exist_ok=True)
-                subprocess.run(
-                    ["npm", "install", "--prefix", f"{temp_dir}/{runtime_dir}"]
-                    + packages.split(),
-                    check=True,
-                )
-            else:
-                subprocess.run(
-                    ["pip", "install", "--target", f"{temp_dir}/{runtime_dir}"]
-                    + packages.split(),
-                    check=True,
-                )
-
-            # Create the zip file
-            zip_file = f"{layer_name}.zip"
-            shutil.make_archive(layer_name, "zip", temp_dir)
-
-            if not os.path.exists(zip_file):
-                click.echo("Zip file was not created.")
-                sys.exit(1)
-
+    try:
+        if runtime == "nodejs":
+            os.makedirs(f"{temp_dir}/{runtime_dir}/node_modules", exist_ok=True)
             subprocess.run(
-                [
-                    "aws",
-                    "lambda",
-                    "publish-layer-version",
-                    "--layer-name",
-                    layer_name,
-                    "--zip-file",
-                    f"fileb://{zip_file}",
-                    "--compatible-runtimes",
-                    runtime_version,
-                    "--region",
-                    region,
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                ["npm", "install", "--prefix", f"{temp_dir}/{runtime_dir}"]
+                + packages.split(),
+                check=True,
+            )
+        else:
+            subprocess.run(
+                ["pip", "install", "--target", f"{temp_dir}/{runtime_dir}"]
+                + packages.split(),
                 check=True,
             )
 
-            os.remove(zip_file)
-            click.echo(
-                f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda!"
-            )
-        except subprocess.CalledProcessError as e:
-            click.echo(f"Error: {e}")
+        # Create the zip file
+        zip_file = f"{temp_dir}/{layer_name}.zip"
+        shutil.make_archive(zip_file.replace(".zip", ""), "zip", temp_dir)
+
+        if not os.path.exists(zip_file):
+            click.echo("Zip file was not created.")
             sys.exit(1)
+
+        subprocess.run(
+            [
+                "aws",
+                "lambda",
+                "publish-layer-version",
+                "--layer-name",
+                layer_name,
+                "--zip-file",
+                f"fileb://{zip_file}",
+                "--compatible-runtimes",
+                runtime_version,
+                "--region",
+                region,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
+
+        click.echo(
+            f"Layer {layer_name} has been successfully created and uploaded to AWS Lambda!"
+        )
+    except subprocess.CalledProcessError as e:
+        click.echo(f"Error: {e}")
+        sys.exit(1)
+    finally:
+        # Clean up
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 # List command

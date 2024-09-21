@@ -14,7 +14,7 @@ curl -sSL https://raw.githubusercontent.com/Pablo-Wynistorf/lambda-layergen/main
 
 Before using this application, ensure you have the following tools installed:
 
-- **AWS CLI**: For uploading the layers to your account
+- **AWS CLI**: To upload the layers to your aws account
 - **npm**: To install the npm dependencies
 - **pip**: To install the pip dependencies
 

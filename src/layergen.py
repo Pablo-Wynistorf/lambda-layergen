@@ -58,9 +58,9 @@ def get_default_region():
     if result.returncode == 0 and result.stdout.strip():
         region = result.stdout.strip()
     else:
-        region = os.getenv("aws_default_region")
+        region = os.getenv("AWS_DEFAULT_REGION")
         if region:
-            click.echo(f"Using aws_default_region: {region}")
+            click.echo(f"Using AWS_DEFAULT_REGION: {region}")
         else:
             click.echo("No default region configured, using us-east-1 as default.")
             region = "us-east-1"

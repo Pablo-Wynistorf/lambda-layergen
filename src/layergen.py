@@ -8,7 +8,6 @@ import uuid
 import click
 
 
-# Helper functions
 def check_dependencies():
     """Check if AWS CLI, pip, zip, and npm are installed."""
     has_aws = True
@@ -69,14 +68,12 @@ def get_default_region():
     return region
 
 
-# Main CLI Group
 @click.group()
 def cli():
     """A CLI tool to manage AWS Lambda Layers."""
     pass
 
 
-# Create command
 @cli.command()
 @click.option(
     "--layer-name",
@@ -186,7 +183,6 @@ def create(layer_name, runtime, packages, region):
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-# List command
 @cli.command()
 @click.option(
     "--region",

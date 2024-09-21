@@ -40,4 +40,4 @@ jobs:
         with:
           branch: prod
           force: true
-          directory: dist
+          directory: /

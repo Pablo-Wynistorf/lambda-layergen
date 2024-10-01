@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import sys
 import uuid
+import json
+from tabulate import tabulate
 
 import click
 
@@ -24,15 +26,15 @@ def check_dependencies():
         has_npm = False
 
     if not has_aws:
-        click.echo("Please install the AWS CLI before running this script.")
+        click.echo("Please install the AWS CLI first")
         sys.exit(1)
 
     if not has_pip:
-        click.echo("Please install pip before running this script.")
+        click.echo("Please install pip first")
         sys.exit(1)
 
     if not has_npm:
-        click.echo("Please install npm before running this script.")
+        click.echo("Please install npm first")
         sys.exit(1)
 
 
@@ -43,7 +45,7 @@ def check_aws_signed_in():
             ["aws", "sts", "get-caller-identity"], check=True, capture_output=True
         )
     except subprocess.CalledProcessError:
-        click.echo("Please sign in to the AWS CLI before running this script.")
+        click.echo("Please sign in to the AWS CLI first")
         sys.exit(1)
 
 
@@ -201,7 +203,6 @@ def list(region):
             "Error: No AWS region specified. Please set AWS_DEFAULT_REGION or configure your AWS CLI."
         )
         sys.exit(1)
-
     result = subprocess.run(
         ["aws", "lambda", "list-layers", "--region", region],
         capture_output=True,
@@ -210,8 +211,27 @@ def list(region):
 
     if result.returncode != 0:
         click.echo("Error listing layers.")
-    else:
-        click.echo(result.stdout)
+        sys.exit(1)
+
+    layers = json.loads(result.stdout).get('Layers', [])
+
+    if not layers:
+        click.echo(f"No Lambda layers found in region {region}.")
+        sys.exit(1)
+
+    click.echo(f"Region: {region}\n")
+
+    table_data = []
+    for layer in layers:
+        layer_name = layer.get('LayerName')
+        latest_version = layer.get('LatestMatchingVersion', {})
+        layer_version = latest_version.get('Version')
+        compatible_runtimes = latest_version.get('CompatibleRuntimes', [])
+
+        table_data.append([layer_name, layer_version, ', '.join(compatible_runtimes)])
+
+    table_headers = ["Layer Name", "Version", "Compatible Runtimes"]
+    click.echo(tabulate(table_data, headers=table_headers, tablefmt="pretty"))
 
 
 @cli.command()

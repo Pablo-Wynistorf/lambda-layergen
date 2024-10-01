@@ -1,8 +1,12 @@
 #!/bin/bash
-URL="https://raw.githubusercontent.com/Pablo-Wynistorf/lambda-layergen/main/layergen"
+
+LATEST_RELEASE=$(curl -s https://api.github.com/repos/Pablo-Wynistorf/lambda-layergen/releases/latest)
+
+ASSET_URL=$(echo "$LATEST_RELEASE" | grep "browser_download_url" | cut -d '"' -f 4)
+
 DEST="/usr/local/bin/layergen"
 
-curl -L $URL -o $DEST
+curl -L $ASSET_URL -o $DEST
 
 chmod +x $DEST
 

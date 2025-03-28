@@ -75,11 +75,19 @@ def get_default_region():
     return region
 
 
+def get_version():
+    version = "layergen_version"
+    return version
+
 @click.group()
 def cli():
     """A CLI tool to manage AWS Lambda Layers."""
     pass
 
+@cli.command()
+def version():
+    """Display the current version of the tool."""
+    click.echo(f"Current version: {get_version()}")
 
 @cli.command()
 @click.option(

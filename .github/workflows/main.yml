@@ -28,6 +28,7 @@ jobs:
       - name: Build binary
         working-directory: ./src
         run: |
+          sed -i "s/layergen_version/v1.0.${{ github.run_number }}/" layergen.py
           pyinstaller --onefile --hidden-import=click layergen.py
 
       - name: Move binary to root directory

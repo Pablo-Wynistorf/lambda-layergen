@@ -28,7 +28,7 @@ jobs:
       - name: Build binary
         working-directory: ./src
         run: |
-          pyinstaller --onefile --hidden-import=click layergen.py
+          pyinstaller --onefile --hidden-import=click --hidden-import=tabulate --hidden-import=shutil --hidden-import=json --hidden-import=uuid --hidden-import=re --hidden-import=os --hidden-import=subprocess --hidden-import=sys layergen.py
 
       - name: Move binary to root directory
         run: |

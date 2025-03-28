@@ -9,6 +9,11 @@ from tabulate import tabulate
 
 import click
 
+valid_runtime_versions = [
+    "nodejs22.x", "nodejs20.x", "nodejs18.x",
+    "python3.9", "python3.10", "python3.11", "python3.12", "python3.13"
+]
+
 
 def check_dependencies():
     """Check if AWS CLI, pip, zip, and npm are installed."""
@@ -84,9 +89,9 @@ def cli():
 )
 @click.option(
     "--runtime",
-    type=click.Choice(["nodejs", "python"], case_sensitive=False),
-    prompt="Select the runtime",
     help="The runtime environment for the Lambda Layer.",
+    type=click.Choice(valid_runtime_versions, case_sensitive=False),
+    prompt="Select the runtime",
 )
 @click.option(
     "--packages",
@@ -106,13 +111,15 @@ def create(layer_name, runtime, packages, region):
         click.echo("Error: Layer name can only contain letters, numbers, and dashes.")
         sys.exit(1)
 
-    if runtime == "nodejs":
-        click.echo("You selected Node.js 20.x")
-        runtime_version = "nodejs20.x"
+    if runtime not in valid_runtime_versions:
+        click.echo(f"Error: Invalid runtime version '{runtime}'. Please use one of the following: {', '.join(valid_runtime_versions)}.")
+        sys.exit(1)
+
+    if runtime.startswith("nodejs"):
+        click.echo(f"You selected Node.js {runtime}")
         runtime_dir = "nodejs"
-    elif runtime == "python":
-        click.echo("You selected Python 3.12")
-        runtime_version = "python3.12"
+    elif runtime.startswith("python"):
+        click.echo(f"You selected Python {runtime}")
         runtime_dir = "python"
 
     if region is None:
@@ -125,7 +132,7 @@ def create(layer_name, runtime, packages, region):
     os.makedirs(f"{temp_dir}/{runtime_dir}", exist_ok=True)
 
     try:
-        if runtime == "nodejs":
+        if runtime.startswith("nodejs"):
             os.makedirs(f"{temp_dir}/{runtime_dir}/node_modules", exist_ok=True)
             click.echo("Installing npm packages")
             subprocess.run(
@@ -166,7 +173,7 @@ def create(layer_name, runtime, packages, region):
                 "--zip-file",
                 f"fileb://{zip_file}",
                 "--compatible-runtimes",
-                runtime_version,
+                runtime,
                 "--region",
                 region,
             ],

@@ -21,6 +21,14 @@ jobs:
             arch: arm64
             artifact_name: layergen-linux-arm64
 
+          - os: macos-13
+            arch: amd64
+            artifact_name: layergen-darwin-amd64
+
+          - os: macos-latest
+            arch: arm64
+            artifact_name: layergen-darwin-arm64
+
     steps:
 
       - name: Checkout code
@@ -68,6 +76,8 @@ jobs:
         run: |
           chmod +x ./artifacts/layergen-linux-amd64/layergen-linux-amd64
           chmod +x ./artifacts/layergen-linux-arm64/layergen-linux-arm64
+          chmod +x ./artifacts/layergen-darwin-amd64/layergen-darwin-amd64
+          chmod +x ./artifacts/layergen-darwin-arm64/layergen-darwin-arm64
 
       - name: Create GitHub Release
         id: create_release
@@ -80,7 +90,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload amd64 binary
+      - name: Upload linux-amd64 binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -90,7 +100,7 @@ jobs:
           asset_name: layergen-linux-amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload arm64 binary
+      - name: Upload linux-arm64 binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -98,4 +108,24 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./artifacts/layergen-linux-arm64/layergen-linux-arm64
           asset_name: layergen-linux-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload darwin-amd64 binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/layergen-darwin-amd64/layergen-darwin-amd64
+          asset_name: layergen-darwin-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload darwin-arm64 binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/layergen-darwin-arm64/layergen-darwin-arm64
+          asset_name: layergen-darwin-arm64
           asset_content_type: application/octet-stream

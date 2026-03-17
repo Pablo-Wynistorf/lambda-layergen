@@ -17,6 +17,13 @@ case "$ARCH" in
   *)       echo "Unsupported architecture: $ARCH"; exit 1 ;;
 esac
 
+# macOS on Apple Silicon can report x86_64 under Rosetta
+
+# Since we only build arm64 for macOS, always use arm64 on darwin
+if [ "$OS_NAME" = "darwin" ]; then
+  ARCH_NAME="arm64"
+fi
+
 BINARY_NAME="layergen-${OS_NAME}-${ARCH_NAME}"
 
 echo "Detected platform: ${OS_NAME}/${ARCH_NAME}"

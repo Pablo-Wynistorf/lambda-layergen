@@ -40,7 +40,6 @@ DEST="/usr/local/bin/layergen"
 
 echo "⬇️  Downloading from: $ASSET_URL"
 
-# Use sudo if we can't write to /usr/local/bin
 if [ -w "$(dirname $DEST)" ]; then
   curl -sL "$ASSET_URL" -o "$DEST"
   chmod +x "$DEST"

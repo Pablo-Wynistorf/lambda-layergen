@@ -3,13 +3,26 @@ name: Build Binary and Create Release
 on:
   push:
     branches:
+
       - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+
+          - os: ubuntu-latest
+            arch: amd64
+            artifact_name: layergen-linux-amd64
+
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            artifact_name: layergen-linux-arm64
 
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -32,7 +45,29 @@ jobs:
 
       - name: Move binary to root directory
         run: |
-          mv src/dist/* ./layergen
+          mv src/dist/layergen ./${{ matrix.artifact_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ./${{ matrix.artifact_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Make binaries executable
+        run: |
+          chmod +x ./artifacts/layergen-linux-amd64/layergen-linux-amd64
+          chmod +x ./artifacts/layergen-linux-arm64/layergen-linux-arm64
 
       - name: Create GitHub Release
         id: create_release
@@ -45,12 +80,22 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
+      - name: Upload amd64 binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./layergen
-          asset_name: layergen
+          asset_path: ./artifacts/layergen-linux-amd64/layergen-linux-amd64
+          asset_name: layergen-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload arm64 binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/layergen-linux-arm64/layergen-linux-arm64
+          asset_name: layergen-linux-arm64
           asset_content_type: application/octet-stream
